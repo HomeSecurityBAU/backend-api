@@ -31,12 +31,18 @@ ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',') # .env den ok
 # Application definition
 
 INSTALLED_APPS = [
+    # django uygulamaları
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
     'django.contrib.sessions',
     'django.contrib.messages',
     'django.contrib.staticfiles',
+    # üçüncü taraf uygulamalar (benim eklediklerim)
+    'core',  # veritabanı modelleri için core eklendi
+    'rest_framework',  # DRF için, API oluşturmak için
+    'corsheaders',  # CORS için, mobil için erişim
+
 ]
 
 MIDDLEWARE = [
