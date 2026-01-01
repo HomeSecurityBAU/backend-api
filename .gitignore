@@ -1,5 +1,5 @@
 #python dosyaları 
-#__pycache__/ *.py[cod] *$py.class : Python çöp dosyaları için | venv/ env/ : projedeki kütüphane klasörleridir. requirements.txt dosyasından yüklenebilirler.
+#__pycache__/ *.py[cod] *$py.class : Python çöp dosyaları için | venv/ env/ : projedeki kütüphane klasörleri, requirements.txt dosyasından yüklenebilirler.
 __pycache__/ 
 *.py[cod]
 *$py.class
@@ -7,7 +7,7 @@ venv/
 env/
 
 #django 
-# db.sqlite3: gereksiz biz Posgre kullanıcaz | media/: yüklenen medya dosyaları için (kod değil) | local_settings.py: django yerel ayar dosyaları için | *.log : log dosyaları için
+# db.sqlite3: gereksiz, biz PostgreSQL kullanıcaz | media/: yüklenen medya dosyaları için (kod değil) | local_settings.py: Django yerel ayar dosyaları için | *.log : log dosyaları için
 *.log  
 local_settings.py
 db.sqlite3
@@ -19,7 +19,7 @@ media/
 .env.*
 
 #IDE dosyaları 
-# .idea/  .vscode/ : ide ayar dosyaları için gereksiz dosyalar | *.swp : vim geçici dosyaları için, yedek dosya gibi
+# .idea/  .vscode/ : IDE ayar dosyaları için gereksiz dosyalar | *.swp : vim geçici dosyaları için, yedek dosya gibi
 .vscode/
 .idea/
 *.swp
