@@ -5,7 +5,8 @@ services:
   backend:
     build: . 
     container_name: homesecurity_backend
-    command: sleep infinity  # kod yazmadığım için backend servisini uyuttum
+    working_dir: /app/app # Django proje dizini, karmaşa olmasın diye /app/app yaptık
+    command: python manage.py runserver 0.0.0.0:8000  # Django sunucusunu başlatmak için, sleep infinity uyutuyor
     volumes:
       - ./app:/app/app  
     ports:
