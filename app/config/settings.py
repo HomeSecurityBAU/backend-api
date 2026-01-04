@@ -42,6 +42,7 @@ INSTALLED_APPS = [
     'core',  # veritabanı modelleri için core eklendi
     'rest_framework',  # DRF için, API oluşturmak için
     'corsheaders',  # CORS için, mobil için erişim
+    'drf_spectacular', #drf için ui eklenti
 
 ]
 
@@ -131,3 +132,15 @@ STATIC_URL = 'static/'
 # https://docs.djangoproject.com/en/5.0/ref/settings/#default-auto-field
 
 DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
+
+REST_FRAMEWORK = {
+    'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema', #drf için dokümentasyon ui eklenti
+}
+
+#dokümentasyondaki başlıklar   
+SPECTACULAR_SETTINGS = {
+    'TITLE': 'Home Security API',
+    'DESCRIPTION': 'Capstone project Backend API description',
+    'VERSION': '1.0.0',
+    'SERVE_INCLUDE_SCHEMA': False, 
+}

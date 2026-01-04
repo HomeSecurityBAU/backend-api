@@ -16,8 +16,22 @@ Including another URLconf
 """
 from django.contrib import admin
 from django.urls import path, include #"include" core/urls.py daki router ın oluşturduğu url leri çekebilmek için
+from drf_spectacular.views import SpectacularAPIView, SpectacularRedocView, SpectacularSwaggerView # spectacular kullanmak için
+
 
 urlpatterns = [
     path('admin/', admin.site.urls),
     path('api/', include('core.urls')),
+
+    #spectacular için url ler lazım olursa diye hepsini koyuyorum
+    
+    path('api/docs/', SpectacularSwaggerView.as_view(url_name='schema'), name='swagger-ui'), #debug için fln kullanılacak url
+
+    path('api/redoc/', SpectacularRedocView.as_view(url_name='schema'), name='redoc'), # veri göndermek yada çekmek için gerekli formatı görmek için olan url
+
+    path('api/schema/', SpectacularAPIView.as_view(), name='schema'),#bu direkt hazır veri tipleri falan için .yaml dosyası indiriyor
+
+    
+
+
 ]
