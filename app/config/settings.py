@@ -176,10 +176,17 @@ KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM', 'master')
 
 SIMPLE_JWT = {
     'ALGORITHM': 'RS256',
-    'JWK_URL': f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs",
-    'ISSUER': f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}",
-    'USER_ID_CLAIM': 'sub', # Keycloak standart olarak JWT içinde kullanıcı kimliğini 'sub' olarak gönderir
+    'VERIFYING_KEY': """-----BEGIN PUBLIC KEY-----
+MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApQHq8GEoxIv5xs7CqZuykPzoXghPdwDSGlyM+lah1pU3SpOSKIrx834ViF+6j46twBUTx86p14VI0E3FX4JFMrlTEBqf2JVnC36IBtC5LIRwFq4xyw6TKnbWK2lbAmG74uZRmp423zw9ht94AOsqYKtLYcEYMKvseGsbFKKOWqyObcgIijCOAsivJ2/2ITv1/jieIzKXZdXase5Ak+UBGfd448eyk5gqwP0U8zT6CkvwSjcTqAwkb89szP4aknBgLUwZwIEVuWMljKv3rqUVKR0hUb2VjLhy8zFYINyyf9WHBSowhnMnx2u9DKnVIdmBZMblIzkgthg3MpoSu5RokwIDAQAB
+-----END PUBLIC KEY-----""",
+    'ISSUER': 'http://localhost:8080/realms/SmartHomeRealm',
+    'USER_ID_CLAIM': 'preferred_username',
+    
+    # İŞTE ÇÖZÜM: Django'ya kullanıcıyı 'username' sütununda aramasını söylüyoruz!
+    'USER_ID_FIELD': 'username', 
+    
+    'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.UntypedToken',),
+    'AUDIENCE': None,
 }
-
 # Geliştirme aşamasında mobil ve web'den gelen tüm isteklere izin vermek için:
 CORS_ALLOW_ALL_ORIGINS = True
