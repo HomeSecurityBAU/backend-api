@@ -31,6 +31,22 @@ services:
       - .env
     ports:
       - "5432:5432"
+  keycloak:
+    image: quay.io/keycloak/keycloak:23.0.0 # Güncel ve stabil bir sürüm
+    container_name: homesecurity_keycloak
+    environment:
+      KC_DB: postgres # Keycloak da verilerini bizim PostgreSQL'de tutacak
+      KC_DB_URL_HOST: db
+      KC_DB_URL_DATABASE: keycloak_db # Keycloak için ayrı bir mantıksal veritabanı adı
+      KC_DB_USERNAME: ${POSTGRES_USER}
+      KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
+      KEYCLOAK_ADMIN: admin # Keycloak Paneline giriş için admin kullanıcı adı
+      KEYCLOAK_ADMIN_PASSWORD: admin # Keycloak Paneline giriş için admin şifresi
+    ports:
+      - "8080:8080" # Keycloak web paneli bu portta çalışacak
+    command: start-dev # Geliştirme modu için
+    depends_on:
+      - db
 
 volumes:
   postgres_data:

@@ -24,10 +24,16 @@ class AlertConsumer(AsyncWebsocketConsumer):
     async def send_alert(self, event):
         message = event['message']
         alert_type = event['alert_type']
+        device_name = event.get('device_name', 'Bilinmeyen Cihaz')
+        value = event.get('value', alert_type)
+        timestamp = event.get('timestamp', '')
 
         # Mobil cihaza JSON olarak gönder
         await self.send(text_data=json.dumps({
             'type': 'alert',
             'alert_type': alert_type,
-            'message': message
+            'message': message,
+            'device_name': device_name,
+            'value': value,
+            'timestamp': timestamp
         }))

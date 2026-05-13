@@ -154,6 +154,12 @@ DEFAULT_AUTO_FIELD = 'django.db.models.BigAutoField'
 
 REST_FRAMEWORK = {
     'DEFAULT_SCHEMA_CLASS': 'drf_spectacular.openapi.AutoSchema', #drf için dokümentasyon ui eklenti
+    'DEFAULT_AUTHENTICATION_CLASSES': [
+        'rest_framework_simplejwt.authentication.JWTAuthentication',
+    ],
+    'DEFAULT_PERMISSION_CLASSES': [
+        'rest_framework.permissions.IsAuthenticated',
+    ],
 }
 
 #dokümentasyondaki başlıklar   
@@ -162,6 +168,17 @@ SPECTACULAR_SETTINGS = {
     'DESCRIPTION': 'Capstone project Backend API description',
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False, 
+}
+
+# Keycloak JWT Doğrulama Ayarları
+KEYCLOAK_SERVER_URL = os.getenv('KEYCLOAK_SERVER_URL', 'http://localhost:8080')
+KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM', 'master')
+
+SIMPLE_JWT = {
+    'ALGORITHM': 'RS256',
+    'JWK_URL': f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs",
+    'ISSUER': f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}",
+    'USER_ID_CLAIM': 'sub', # Keycloak standart olarak JWT içinde kullanıcı kimliğini 'sub' olarak gönderir
 }
 
 # Geliştirme aşamasında mobil ve web'den gelen tüm isteklere izin vermek için:
