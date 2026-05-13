@@ -9,23 +9,31 @@ from .serializers import HomeSerializer, RoomSerializer, DeviceSerializer, Event
 
 #EV VIEW
 class HomeViewSet(viewsets.ModelViewSet): #ModelViewSet otomatik olarak get, post, put ve delete işlemlerini yapcak
-    queryset = Home.objects.all()
     serializer_class = HomeSerializer
+
+    def get_queryset(self):
+        return Home.objects.filter(owner=self.request.user)
 
 #ODA VIEW
 class RoomViewSet(viewsets.ModelViewSet):
-    queryset = Room.objects.all()
     serializer_class = RoomSerializer
+
+    def get_queryset(self):
+        return Room.objects.filter(home__owner=self.request.user)
 
 #CİHAZ VIEW
 class DeviceViewSet(viewsets.ModelViewSet):
-    queryset = Device.objects.all()
     serializer_class = DeviceSerializer
+
+    def get_queryset(self):
+        return Device.objects.filter(room__home__owner=self.request.user)
 
 #EVENT LOG VIEW
 class EventLogViewSet(viewsets.ModelViewSet):
-    queryset = EventLog.objects.all()
     serializer_class = EventLogSerializer
+
+    def get_queryset(self):
+        return EventLog.objects.filter(device__room__home__owner=self.request.user)
 
     def create(self, request, *args, **kwargs):
         serializer = self.get_serializer(data=request.data)
@@ -39,7 +47,7 @@ class EventLogViewSet(viewsets.ModelViewSet):
         # WebSocket için AlertConsumer'a veriyi JSON-uyumlu gönderiyoruz
         channel_layer = get_channel_layer()
         async_to_sync(channel_layer.group_send)(
-            'home_alerts',
+            f'home_{device.room.home.id}_alerts',
             {
                 'type': 'send_alert',  # AlertConsumer içerisindeki çalışacak fonksiyon adı
                 'alert_type': event_log.value,
@@ -55,5 +63,8 @@ class EventLogViewSet(viewsets.ModelViewSet):
 
 #ACCESS LOG VIEW
 class AccessLogViewSet(viewsets.ModelViewSet):
-    queryset = AccessLog.objects.all()
     serializer_class = AccessLogSerializer
+
+    def get_queryset(self):
+        # Modelle eklediğimiz home yardımıyla access logları sadece ilgili kullanıcı görebilecek
+        return AccessLog.objects.filter(home__owner=self.request.user)

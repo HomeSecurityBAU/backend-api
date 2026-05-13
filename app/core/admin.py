@@ -4,8 +4,8 @@ from .models import Home, Room, Device, EventLog, AccessLog
 # değişebilir şimdilik böyle kalsın
 @admin.register(Home)
 class HomeAdmin(admin.ModelAdmin):
-    list_display = ('name', 'owner_name', 'created_at')
-    search_fields = ('name', 'owner_name')
+    list_display = ('name', 'owner', 'created_at')
+    search_fields = ('name', 'owner__username')
 
 @admin.register(Room)
 class RoomAdmin(admin.ModelAdmin):

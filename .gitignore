@@ -27,3 +27,7 @@ media/
 #docker ve sistem dosyaları
 #.DS_Store : MacOS sistem dosyaları için
 .DS_Store
+
+# Test ve Simülasyon Araçları
+iot_simulator.py
+dashboard.html

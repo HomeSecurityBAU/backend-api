@@ -31,7 +31,4 @@ urlpatterns = [
 
     path('api/schema/', SpectacularAPIView.as_view(), name='schema'),#bu direkt hazır veri tipleri falan için .yaml dosyası indiriyor
 
-    
-
-
 ]

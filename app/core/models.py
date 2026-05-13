@@ -1,12 +1,13 @@
 from django.db import models
 from django.utils import timezone # tarih saat işlemleri için utc formatında evrensel, datetime.datetime.now() kullanınca server saatini alıyo
+from django.contrib.auth.models import User
 
 # sonradan değiştirebiliriz örnek olarak oluşturuyorum ben
 
 # EV TABLOSU
 class Home(models.Model):
     name = models.CharField(max_length=100, default='My Home')  # oluşturulan evin adı, defaultta My Home
-    owner_name = models.CharField(max_length=100, blank=True)  # ev sahibinin adı
+    owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='homes', null=True)  # User modeli bağlandı
     created_at= models.DateTimeField(auto_now_add=True)
     #floor=models.IntegerField(default=1) # gerek var mı bilemedim, lazımsa kullanırız
 
@@ -56,6 +57,7 @@ class AccessLog(models.Model): #bura hakkındada çok birşey bilmiyorum parmak 
         ('OUT', 'Çıkış'),
     )
 
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name='access_logs', null=True) # Access loglarının kime ait olduğunu bulabilmek için eklendi
     user_id = models.CharField(max_length=50) #kart id
     #gate_id = models.CharField(max_length=50) #ana kapı veya bahçe kapısı gibi olabilir 
     direction = models.CharField(max_length=3, choices=DIRECTION_CHOICES)

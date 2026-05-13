@@ -4,11 +4,11 @@ from .views import HomeViewSet, RoomViewSet, DeviceViewSet, EventLogViewSet, Acc
 
 #router url leri otomatik oluşturcak (/homes ve /homes/x/ gibi)
 router = DefaultRouter()
-router.register(r'homes', HomeViewSet)
-router.register(r'rooms', RoomViewSet)
-router.register(r'devices', DeviceViewSet)
-router.register(r'eventlogs', EventLogViewSet)
-router.register(r'accesslogs', AccessLogViewSet)
+router.register(r'homes', HomeViewSet, basename='home')
+router.register(r'rooms', RoomViewSet, basename='room')
+router.register(r'devices', DeviceViewSet, basename='device')
+router.register(r'eventlogs', EventLogViewSet, basename='eventlog')
+router.register(r'accesslogs', AccessLogViewSet, basename='accesslog')
 
 urlpatterns = [
     path('', include(router.urls)),

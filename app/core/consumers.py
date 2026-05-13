@@ -3,8 +3,9 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 
 class AlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # Mobil cihaz veya web paneli bağlandığında bu odaya (gruba) alıyoruz.
-        self.room_group_name = 'home_alerts'
+        # URL'den (routing.py üzerinden) gelen home_id değerini alıyoruz
+        self.home_id = self.scope['url_route']['kwargs']['home_id']
+        self.room_group_name = f'home_{self.home_id}_alerts'
 
         # Gruba katıl
         await self.channel_layer.group_add(
