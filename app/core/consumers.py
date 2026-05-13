@@ -38,3 +38,30 @@ class AlertConsumer(AsyncWebsocketConsumer):
             'value': value,
             'timestamp': timestamp
         }))
+
+class CommandConsumer(AsyncWebsocketConsumer):
+    async def connect(self):
+        self.home_id = self.scope['url_route']['kwargs']['home_id']
+        self.room_group_name = f'home_{self.home_id}_commands'
+
+        # Gruba katıl
+        await self.channel_layer.group_add(
+            self.room_group_name,
+            self.channel_name
+        )
+        await self.accept()
+
+    async def disconnect(self, close_code):
+        # Bağlantı koptuğunda gruptan ayrıl
+        await self.channel_layer.group_discard(
+            self.room_group_name,
+            self.channel_name
+        )
+
+    # View üzerinden 'send_command' eventi tetiklendiğinde çalışır
+    async def send_command(self, event):
+        # IoT cihazına komutu JSON olarak gönder
+        await self.send(text_data=json.dumps({
+            'type': 'command',
+            **event # Dict unpacking ile command, payload, device_id gibi verileri doğrudan aktarıyoruz
+        }))

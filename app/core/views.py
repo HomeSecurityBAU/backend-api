@@ -1,5 +1,6 @@
 from django.shortcuts import render
 from rest_framework import viewsets, status
+from rest_framework.decorators import action
 from rest_framework.response import Response
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
@@ -28,6 +29,32 @@ class DeviceViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return Device.objects.filter(room__home__owner=self.request.user)
+
+    @action(detail=True, methods=['post'])
+    def send_command(self, request, pk=None):
+        device = self.get_object()
+        command = request.data.get('command')
+        payload = request.data.get('payload', {})
+        
+        if not command:
+            return Response({'error': 'Komut (command) parametresi gereklidir.'}, status=status.HTTP_400_BAD_REQUEST)
+            
+        home_id = device.room.home.id
+        
+        # WebSocket ile IoT cihazlarına komutu gönder
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'home_{home_id}_commands',
+            {
+                'type': 'send_command', # Consumer'daki metodun adı
+                'command': command,
+                'payload': payload,
+                'device_id': device.id,
+                'device_name': device.name
+            }
+        )
+        
+        return Response({'status': 'Komut iletildi'}, status=status.HTTP_200_OK)
 
 #EVENT LOG VIEW
 class EventLogViewSet(viewsets.ModelViewSet):
