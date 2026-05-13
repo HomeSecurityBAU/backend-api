@@ -12,9 +12,12 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 
 from pathlib import Path
 import os # .env değişkenleri okumak için
+from dotenv import load_dotenv
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
+
+load_dotenv(BASE_DIR.parent / '.env') # .env dosyası backend-api ana dizininde olduğu için bir üst klasöre bakıyoruz
 
 
 # Quick-start development settings - unsuitable for production
@@ -25,13 +28,14 @@ SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key') # .env dosya
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',') # .env den okunur, yoksa localhost
-
+#ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',') # .env den okunur, yoksa localhost
+ALLOWED_HOSTS = ['*']  # Geliştirme (Development) ortamı için herkese açık bırakıyoruz
 
 # Application definition
 
 INSTALLED_APPS = [
     # django uygulamaları
+    'daphne',
     'django.contrib.admin',
     'django.contrib.auth',
     'django.contrib.contenttypes',
@@ -43,10 +47,12 @@ INSTALLED_APPS = [
     'rest_framework',  # DRF için, API oluşturmak için
     'corsheaders',  # CORS için, mobil için erişim
     'drf_spectacular', #drf için ui eklenti
+    'channels', #websocket için
 
 ]
 
 MIDDLEWARE = [
+    'corsheaders.middleware.CorsMiddleware', # CORS isteklerini yakalamak için en üste eklenmelidir
     'django.middleware.security.SecurityMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
@@ -76,6 +82,19 @@ TEMPLATES = [
 
 WSGI_APPLICATION = 'config.wsgi.application'
 
+
+# Standart WSGI yerine Asenkron ASGI kullanacağımızı belirtiyoruz
+ASGI_APPLICATION = 'config.asgi.application'
+
+# Redis Bağlantı Ayarları (Docker-compose içindeki redis servisine işaret eder)
+CHANNEL_LAYERS = {
+    'default': {
+        'BACKEND': 'channels_redis.core.RedisChannelLayer',
+        'CONFIG': {
+            "hosts": [('redis', 6379)], # Eğer localde çalışıyorsan ve Redis ayrıysa ('127.0.0.1', 6379) olabilir.
+        },
+    },
+}
 
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
@@ -144,3 +163,6 @@ SPECTACULAR_SETTINGS = {
     'VERSION': '1.0.0',
     'SERVE_INCLUDE_SCHEMA': False, 
 }
+
+# Geliştirme aşamasında mobil ve web'den gelen tüm isteklere izin vermek için:
+CORS_ALLOW_ALL_ORIGINS = True
