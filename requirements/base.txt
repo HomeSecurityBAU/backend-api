@@ -11,3 +11,4 @@ drf-spectacular==0.27.1 #api için ui eklentisi gibi bişey otomatik ui ekliyo g
 
 djangorestframework-simplejwt
 cryptography
+firebase-admin

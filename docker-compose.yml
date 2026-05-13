@@ -5,8 +5,8 @@ services:
   backend:
     build: . 
     container_name: homesecurity_backend
-    working_dir: /app/app # Django proje dizini, karmaşa olmasın diye /app/app yaptık
-    command: python manage.py runserver 0.0.0.0:8000  # Django sunucusunu başlatmak için, sleep infinity uyutuyor
+    working_dir: /app/app
+    command: python manage.py runserver 0.0.0.0:8000
     volumes:
       - ./app:/app/app  
     ports:
@@ -15,15 +15,19 @@ services:
       - .env 
     depends_on:
       - db 
+      - redis
+
+  # 2. Redis (WebSocket ve Kanal katmanı için)
   redis:
     image: redis:7-alpine
     container_name: homesecurity_redis
     ports:
       - "6379:6379"
     restart: always
-  # 2. Veritabanı (PostgreSQL 16) 
+
+  # 3. Veritabanı (PostgreSQL 16) 
   db:
-    image: postgres:16-alpine #Alpine linux tabanlı, 16 sürümü debian tabanlı. kısaca alpine daha hafif
+    image: postgres:16-alpine
     container_name: homesecurity_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
@@ -31,20 +35,27 @@ services:
       - .env
     ports:
       - "5432:5432"
+
+  # 4. Keycloak (Kimlik Yönetimi)
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.0 # Güncel ve stabil bir sürüm
+    image: quay.io/keycloak/keycloak:23.0.1 # Sürümü 23.0.1 olarak sabitledik
     container_name: homesecurity_keycloak
     environment:
-      KC_DB: postgres # Keycloak da verilerini bizim PostgreSQL'de tutacak
+      KC_DB: postgres
       KC_DB_URL_HOST: db
-      KC_DB_URL_DATABASE: keycloak_db # Keycloak için ayrı bir mantıksal veritabanı adı
+      KC_DB_URL_DATABASE: keycloak_db
       KC_DB_USERNAME: ${POSTGRES_USER}
       KC_DB_PASSWORD: ${POSTGRES_PASSWORD}
-      KEYCLOAK_ADMIN: admin # Keycloak Paneline giriş için admin kullanıcı adı
-      KEYCLOAK_ADMIN_PASSWORD: admin # Keycloak Paneline giriş için admin şifresi
+      KEYCLOAK_ADMIN: admin
+      KEYCLOAK_ADMIN_PASSWORD: admin
     ports:
-      - "8080:8080" # Keycloak web paneli bu portta çalışacak
-    command: start-dev # Geliştirme modu için
+      - "8080:8080"
+    volumes:
+      #Bilgisayarındaki realm-export.json dosyasını konteynere bağladık
+      - ./realm-export.json:/opt/keycloak/data/import/realm-export.json
+    command: 
+      - start-dev 
+      - --import-realm # Başlangıçta dosyayı otomatik içe aktarır
     depends_on:
       - db
 

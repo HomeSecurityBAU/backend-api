@@ -31,3 +31,6 @@ media/
 # Test ve Simülasyon Araçları
 iot_simulator.py
 dashboard.html
+
+# Firebase Service Account Key
+firebase-adminsdk.json

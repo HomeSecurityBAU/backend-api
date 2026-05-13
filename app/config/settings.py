@@ -13,6 +13,8 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 from pathlib import Path
 import os # .env değişkenleri okumak için
 from dotenv import load_dotenv
+import firebase_admin
+from firebase_admin import credentials
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -190,3 +192,14 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApQHq8GEoxIv5xs7CqZuykPzoXghPdwDSGlyM
 }
 # Geliştirme aşamasında mobil ve web'den gelen tüm isteklere izin vermek için:
 CORS_ALLOW_ALL_ORIGINS = True
+
+# --- FIREBASE ADMIN SDK INITIALIZATION ---
+# Firebase proje ayarlarından indirilen service account JSON dosyasının proje dizinindeki yolu
+FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-adminsdk.json')
+
+if not firebase_admin._apps:
+    if os.path.exists(FIREBASE_CREDENTIALS_PATH):
+        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+        firebase_admin.initialize_app(cred)
+    else:
+        print(f"Uyarı: Firebase yetkilendirme dosyası bulunamadı! {FIREBASE_CREDENTIALS_PATH}")

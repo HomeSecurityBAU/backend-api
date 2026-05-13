@@ -3,8 +3,9 @@ from rest_framework import viewsets, status
 from rest_framework.response import Response
 from channels.layers import get_channel_layer
 from asgiref.sync import async_to_sync
-from .models import Home, Room, Device, EventLog, AccessLog
-from .serializers import HomeSerializer, RoomSerializer, DeviceSerializer, EventLogSerializer, AccessLogSerializer
+from firebase_admin import messaging
+from .models import Home, Room, Device, EventLog, AccessLog, FCMToken
+from .serializers import HomeSerializer, RoomSerializer, DeviceSerializer, EventLogSerializer, AccessLogSerializer, FCMTokenSerializer
 
 
 #EV VIEW
@@ -58,6 +59,24 @@ class EventLogViewSet(viewsets.ModelViewSet):
             }
         )
         
+        # FCM ile Push Notification (Bildirim) Gönderimi
+        owner = device.room.home.owner
+        if owner:
+            tokens = FCMToken.objects.filter(user=owner).values_list('token', flat=True)
+            if tokens:
+                message = messaging.MulticastMessage(
+                    notification=messaging.Notification(
+                        title="Güvenlik Uyarısı",
+                        body=f"{device.name} cihazından '{event_log.value}' uyarısı alındı!"
+                    ),
+                    tokens=list(tokens),
+                )
+                try:
+                    # Birden fazla cihaza (telefon, tablet vs.) aynı anda göndermek için
+                    messaging.send_each_for_multicast(message)
+                except Exception as e:
+                    print(f"FCM Bildirimi gönderilirken hata oluştu: {e}")
+
         headers = self.get_success_headers(serializer.data)
         return Response(serializer.data, status=status.HTTP_201_CREATED, headers=headers)
 
@@ -68,3 +87,15 @@ class AccessLogViewSet(viewsets.ModelViewSet):
     def get_queryset(self):
         # Modelle eklediğimiz home yardımıyla access logları sadece ilgili kullanıcı görebilecek
         return AccessLog.objects.filter(home__owner=self.request.user)
+
+# FCM TOKEN VIEW
+class FCMTokenViewSet(viewsets.ModelViewSet):
+    serializer_class = FCMTokenSerializer
+
+    def get_queryset(self):
+        # Giriş yapan kullanıcı sadece kendi tokenlarını görebilir/silebilir
+        return FCMToken.objects.filter(user=self.request.user)
+
+    def perform_create(self, serializer):
+        # Token veritabanına kaydedilirken sahibi otomatik olarak bağlanan kullanıcı olur
+        serializer.save(user=self.request.user)

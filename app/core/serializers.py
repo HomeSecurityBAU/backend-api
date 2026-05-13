@@ -1,5 +1,5 @@
 from rest_framework import serializers
-from .models import Home, Room, Device, EventLog, AccessLog
+from .models import Home, Room, Device, EventLog, AccessLog, FCMToken
 
 #Python verisini JSON a çevirmek için 
 #EV SERIALIZER
@@ -31,3 +31,9 @@ class AccessLogSerializer(serializers.ModelSerializer):
     class Meta:
         model = AccessLog
         fields = '__all__'
+
+# FCM TOKEN SERIALIZER
+class FCMTokenSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = FCMToken
+        fields = ['id', 'token', 'created_at']
