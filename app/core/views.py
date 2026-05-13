@@ -16,6 +16,24 @@ class HomeViewSet(viewsets.ModelViewSet): #ModelViewSet otomatik olarak get, pos
     def get_queryset(self):
         return Home.objects.filter(owner=self.request.user)
 
+    @action(detail=True, methods=['post'])
+    def set_security_mode(self, request, pk=None):
+        home = self.get_object()
+        arm = request.data.get('arm')
+
+        if arm is None:
+            return Response({'error': "'arm' (boolean) parametresi gereklidir."}, status=status.HTTP_400_BAD_REQUEST)
+
+        if arm:
+            home.is_armed = True
+        else:
+            home.is_armed = False
+            home.alarm_triggered = False
+            
+        home.save()
+        serializer = self.get_serializer(home)
+        return Response(serializer.data, status=status.HTTP_200_OK)
+
 #ODA VIEW
 class RoomViewSet(viewsets.ModelViewSet):
     serializer_class = RoomSerializer

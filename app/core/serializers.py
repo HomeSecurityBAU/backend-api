@@ -6,7 +6,7 @@ from .models import Home, Room, Device, EventLog, AccessLog, FCMToken
 class HomeSerializer(serializers.ModelSerializer): 
     class Meta:
         model = Home
-        fields = '__all__'
+        fields = ['id', 'name', 'owner', 'created_at', 'is_armed', 'alarm_triggered']
 
 #ODA SERIALIZER
 class RoomSerializer(serializers.ModelSerializer):
@@ -18,7 +18,7 @@ class RoomSerializer(serializers.ModelSerializer):
 class DeviceSerializer(serializers.ModelSerializer):
     class Meta:
         model = Device
-        fields = '__all__'
+        fields = ['id', 'room', 'name', 'device_type', 'device_sub_type', 'is_active']
 
 #EVENT LOG SERIALIZER
 class EventLogSerializer(serializers.ModelSerializer):

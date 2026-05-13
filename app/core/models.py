@@ -9,6 +9,8 @@ class Home(models.Model):
     name = models.CharField(max_length=100, default='My Home')  # oluşturulan evin adı, defaultta My Home
     owner = models.ForeignKey(User, on_delete=models.CASCADE, related_name='homes', null=True)  # User modeli bağlandı
     created_at= models.DateTimeField(auto_now_add=True)
+    is_armed = models.BooleanField(default=False)
+    alarm_triggered = models.BooleanField(default=False)
     #floor=models.IntegerField(default=1) # gerek var mı bilemedim, lazımsa kullanırız
 
 
@@ -31,9 +33,21 @@ class Device(models.Model):
         ('ACTUATOR', 'Actuator (Output)'), # vanalar yada alarm gibi şeyler için
     )
 
+    DEVICE_SUB_TYPES = (
+        ('SMOKE', 'Duman Sensörü (MQ-2)'),
+        ('GAS', 'Gaz Sensörü (MQ-6)'),
+        ('WATER', 'Su Baskını Sensörü'),
+        ('MOTION', 'Hareket Sensörü (PIR)'),
+        ('VIBRATION', 'Titreşim/Deprem Sensörü'),
+        ('PUMP', 'Tahliye Pompası'),
+        ('BUZZER', 'Sesli Alarm'),
+        ('NFC', 'NFC Giriş Modülü'),
+    )
+
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='devices')
     name = models.CharField(max_length=50)
     device_type = models.CharField(max_length=20, choices=DEVICE_TYPES)
+    device_sub_type = models.CharField(max_length=20, choices=DEVICE_SUB_TYPES, default='SMOKE')
     is_active = models.BooleanField(default=True)
     #created_at = models.DateTimeField(auto_now_add=True)
 

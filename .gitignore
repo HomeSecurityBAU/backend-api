@@ -12,6 +12,13 @@ env/
 local_settings.py
 db.sqlite3
 media/
+static/
+staticfiles/
+
+# Test ve Kapsam (Coverage) Dosyaları
+.pytest_cache/
+.coverage
+htmlcov/
 
 #evnironment dosyaları 
 # .env .env.* : Çevresel değişken dosyaları için veritabanı şifresi, api anahtarları, tokenlar vb.
@@ -23,10 +30,17 @@ media/
 .vscode/
 .idea/
 *.swp
+*.swo
 
 #docker ve sistem dosyaları
 #.DS_Store : MacOS sistem dosyaları için
 .DS_Store
+Thumbs.db
+
+# Python Paketleme
+build/
+dist/
+*.egg-info/
 
 # Test ve Simülasyon Araçları
 iot_simulator.py
