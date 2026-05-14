@@ -12,6 +12,7 @@ class Home(models.Model):
     is_armed = models.BooleanField(default=False)
     alarm_triggered = models.BooleanField(default=False)
     is_online = models.BooleanField(default=False)
+    last_heartbeat = models.DateTimeField(null=True, blank=True)
     #floor=models.IntegerField(default=1) # gerek var mı bilemedim, lazımsa kullanırız
 
 
