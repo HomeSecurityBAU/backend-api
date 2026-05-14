@@ -16,3 +16,5 @@ firebase-admin
 pytest
 pytest-django
 pytest-asyncio
+
+whitenoise==6.6.0

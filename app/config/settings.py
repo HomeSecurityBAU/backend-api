@@ -15,6 +15,7 @@ import os # .env değişkenleri okumak için
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials
+import json
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -56,6 +57,7 @@ INSTALLED_APPS = [
 MIDDLEWARE = [
     'corsheaders.middleware.CorsMiddleware', # CORS isteklerini yakalamak için en üste eklenmelidir
     'django.middleware.security.SecurityMiddleware',
+    'whitenoise.middleware.WhiteNoiseMiddleware',
     'django.contrib.sessions.middleware.SessionMiddleware',
     'django.middleware.common.CommonMiddleware',
     'django.middleware.csrf.CsrfViewMiddleware',
@@ -93,7 +95,8 @@ CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            "hosts": [('redis', 6379)], # Eğer localde çalışıyorsan ve Redis ayrıysa ('127.0.0.1', 6379) olabilir.
+            #"hosts": [('redis', 6379)], # Eğer localde çalışıyorsan ve Redis ayrıysa ('127.0.0.1', 6379) olabilir.
+            "hosts": [os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')],
         },
     },
 }
@@ -181,7 +184,8 @@ SIMPLE_JWT = {
     'VERIFYING_KEY': """-----BEGIN PUBLIC KEY-----
 MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApQHq8GEoxIv5xs7CqZuykPzoXghPdwDSGlyM+lah1pU3SpOSKIrx834ViF+6j46twBUTx86p14VI0E3FX4JFMrlTEBqf2JVnC36IBtC5LIRwFq4xyw6TKnbWK2lbAmG74uZRmp423zw9ht94AOsqYKtLYcEYMKvseGsbFKKOWqyObcgIijCOAsivJ2/2ITv1/jieIzKXZdXase5Ak+UBGfd448eyk5gqwP0U8zT6CkvwSjcTqAwkb89szP4aknBgLUwZwIEVuWMljKv3rqUVKR0hUb2VjLhy8zFYINyyf9WHBSowhnMnx2u9DKnVIdmBZMblIzkgthg3MpoSu5RokwIDAQAB
 -----END PUBLIC KEY-----""",
-    'ISSUER': 'http://localhost:8080/realms/SmartHomeRealm',
+    #'ISSUER': 'http://localhost:8080/realms/SmartHomeRealm',
+    'ISSUER': f"{os.getenv('KEYCLOAK_SERVER_URL', 'http://localhost:8080')}/realms/SmartHomeRealm",
     'USER_ID_CLAIM': 'preferred_username',
     
     # İŞTE ÇÖZÜM: Django'ya kullanıcıyı 'username' sütununda aramasını söylüyoruz!
@@ -194,12 +198,15 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApQHq8GEoxIv5xs7CqZuykPzoXghPdwDSGlyM
 CORS_ALLOW_ALL_ORIGINS = True
 
 # --- FIREBASE ADMIN SDK INITIALIZATION ---
-# Firebase proje ayarlarından indirilen service account JSON dosyasının proje dizinindeki yolu
-FIREBASE_CREDENTIALS_PATH = os.path.join(BASE_DIR, 'firebase-adminsdk.json')
+firebase_creds_json = os.getenv('FIREBASE_JSON_CREDENTIALS')
 
 if not firebase_admin._apps:
-    if os.path.exists(FIREBASE_CREDENTIALS_PATH):
-        cred = credentials.Certificate(FIREBASE_CREDENTIALS_PATH)
+    if firebase_creds_json:
+        # Metin olarak gelen JSON'u sözlüğe çevir
+        cred_dict = json.loads(firebase_creds_json)
+        cred = credentials.Certificate(cred_dict)
         firebase_admin.initialize_app(cred)
     else:
-        print(f"Uyarı: Firebase yetkilendirme dosyası bulunamadı! {FIREBASE_CREDENTIALS_PATH}")
+        print("Uyarı: FIREBASE_JSON_CREDENTIALS ortam değişkeni bulunamadı!")
+
+STATIC_ROOT = os.path.join(BASE_DIR, 'staticfiles')
