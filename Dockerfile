@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # çalışma dizinini ayarla /app olarak
-WORKDIR /app/app
+WORKDIR /app
 
 # sistem bağımlılıklarını yükle postgre ve diğer paketler için
 RUN apt-get update && apt-get install -y \
@@ -22,6 +22,7 @@ RUN pip install --no-cache-dir -r requirements.txt
 # proje dosyalarını kopyala
 COPY . /app/
 
+WORKDIR /app/app
 # varsayılan komut: python sürümünü gösteri, ilerde python manage.py runserver olcak 
 #CMD ["python", "--version"]
 CMD sh -c "python /app/app/manage.py migrate && daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application"
