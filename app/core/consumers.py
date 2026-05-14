@@ -1,5 +1,9 @@
 import json
 from channels.generic.websocket import AsyncWebsocketConsumer
+from channels.db import database_sync_to_async
+from django.utils import timezone
+from firebase_admin import messaging
+from .models import Home, FCMToken
 
 class AlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -28,6 +32,7 @@ class AlertConsumer(AsyncWebsocketConsumer):
         device_name = event.get('device_name', 'Bilinmeyen Cihaz')
         value = event.get('value', alert_type)
         timestamp = event.get('timestamp', '')
+        is_alarm_active = event.get('is_alarm_active', False)
 
         # Mobil cihaza JSON olarak gönder
         await self.send(text_data=json.dumps({
@@ -36,7 +41,8 @@ class AlertConsumer(AsyncWebsocketConsumer):
             'message': message,
             'device_name': device_name,
             'value': value,
-            'timestamp': timestamp
+            'timestamp': timestamp,
+            'is_alarm_active': is_alarm_active
         }))
 
 class CommandConsumer(AsyncWebsocketConsumer):
@@ -57,6 +63,13 @@ class CommandConsumer(AsyncWebsocketConsumer):
             self.room_group_name,
             self.channel_name
         )
+        
+        await self.set_home_offline_and_notify()
+
+    async def receive(self, text_data):
+        text_data_json = json.loads(text_data)
+        if text_data_json.get('type') == 'heartbeat':
+            await self.update_heartbeat()
 
     # View üzerinden 'send_command' eventi tetiklendiğinde çalışır
     async def send_command(self, event):
@@ -65,3 +78,41 @@ class CommandConsumer(AsyncWebsocketConsumer):
             'type': 'command',
             **event # Dict unpacking ile command, payload, device_id gibi verileri doğrudan aktarıyoruz
         }))
+
+    @database_sync_to_async
+    def set_home_online(self):
+        home = Home.objects.filter(id=self.home_id).first()
+        if home:
+            home.is_online = True
+            home.last_heartbeat = timezone.now()
+            home.save()
+
+    @database_sync_to_async
+    def set_home_offline_and_notify(self):
+        home = Home.objects.filter(id=self.home_id).first()
+        if home:
+            home.is_online = False
+            home.save()
+            
+            owner = home.owner
+            if owner:
+                tokens = FCMToken.objects.filter(user=owner).values_list('token', flat=True)
+                if tokens:
+                    message = messaging.MulticastMessage(
+                        notification=messaging.Notification(
+                            title="Sistem Çevrimdışı!",
+                            body="Ev güvenlik sisteminizle bağlantı koptu. Lütfen internet ve güç durumunu kontrol edin."
+                        ),
+                        tokens=list(tokens),
+                    )
+                    try:
+                        messaging.send_each_for_multicast(message)
+                    except Exception as e:
+                        print(f"FCM Hata (Offline Bildirimi): {e}")
+
+    @database_sync_to_async
+    def update_heartbeat(self):
+        home = Home.objects.filter(id=self.home_id).first()
+        if home:
+            home.last_heartbeat = timezone.now()
+            home.save()

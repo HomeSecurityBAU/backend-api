@@ -42,6 +42,8 @@ class Device(models.Model):
         ('PUMP', 'Tahliye Pompası'),
         ('BUZZER', 'Sesli Alarm'),
         ('NFC', 'NFC Giriş Modülü'),
+        ('MAGNETIC', 'Manyetik Kapı/Pencere Sensörü'),
+        ('FLOW', 'Su Akış Sensörü (YF-S201)'),
     )
 
     room = models.ForeignKey(Room, on_delete=models.CASCADE, related_name='devices')
@@ -90,18 +92,16 @@ class FCMToken(models.Model):
     def __str__(self):
         return f"{self.user.username} - {self.token[:20]}..."
 
+# NFC TAG TABLOSU
+class NFCTag(models.Model):
+    uid = models.CharField(max_length=50, unique=True)
+    user = models.ForeignKey(User, on_delete=models.CASCADE, related_name='nfc_tags')
+    home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name='nfc_tags')
+    is_active = models.BooleanField(default=True)
+    created_at = models.DateTimeField(auto_now_add=True)
 
-    
-
-    
-    
-
-
-     
-
-    
-
-
+    def __str__(self):
+        return f"{self.uid} - {self.user.username}"
 
 
 

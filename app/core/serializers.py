@@ -1,12 +1,12 @@
 from rest_framework import serializers
-from .models import Home, Room, Device, EventLog, AccessLog, FCMToken
+from .models import Home, Room, Device, EventLog, AccessLog, FCMToken, NFCTag
 
 #Python verisini JSON a çevirmek için 
 #EV SERIALIZER
 class HomeSerializer(serializers.ModelSerializer): 
     class Meta:
         model = Home
-        fields = ['id', 'name', 'owner', 'created_at', 'is_armed', 'alarm_triggered']
+        fields = ['id', 'name', 'owner', 'created_at', 'is_armed', 'alarm_triggered', 'is_online', 'last_heartbeat']
 
 #ODA SERIALIZER
 class RoomSerializer(serializers.ModelSerializer):
@@ -37,3 +37,9 @@ class FCMTokenSerializer(serializers.ModelSerializer):
     class Meta:
         model = FCMToken
         fields = ['id', 'token', 'created_at']
+
+# NFC TAG SERIALIZER
+class NFCTagSerializer(serializers.ModelSerializer):
+    class Meta:
+        model = NFCTag
+        fields = '__all__'
