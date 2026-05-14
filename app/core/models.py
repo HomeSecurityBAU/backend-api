@@ -11,6 +11,7 @@ class Home(models.Model):
     created_at= models.DateTimeField(auto_now_add=True)
     is_armed = models.BooleanField(default=False)
     alarm_triggered = models.BooleanField(default=False)
+    is_online = models.BooleanField(default=False)
     #floor=models.IntegerField(default=1) # gerek var mı bilemedim, lazımsa kullanırız
 
 
