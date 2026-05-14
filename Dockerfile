@@ -7,7 +7,7 @@ ENV PYTHONUNBUFFERED=1
 ENV PYTHONDONTWRITEBYTECODE=1
 
 # çalışma dizinini ayarla /app olarak
-WORKDIR /app
+WORKDIR /app/app
 
 # sistem bağımlılıklarını yükle postgre ve diğer paketler için
 RUN apt-get update && apt-get install -y \
