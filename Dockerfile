@@ -23,4 +23,5 @@ RUN pip install --no-cache-dir -r requirements.txt
 COPY . /app/
 
 # varsayılan komut: python sürümünü gösteri, ilerde python manage.py runserver olcak 
-CMD ["python", "--version"]
+#CMD ["python", "--version"]
+CMD ["daphne", "-b", "0.0.0.0", "-p", "8000", "config.asgi:application"]

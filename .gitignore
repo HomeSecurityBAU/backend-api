@@ -48,3 +48,9 @@ dashboard.html
 
 # Firebase Service Account Key
 firebase-adminsdk.json
+
+# Redis veritabanı dökümü
+dump.rdb
+
+# Statik tip kontrolü (mypy) önbelleği
+.mypy_cache/
