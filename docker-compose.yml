@@ -6,7 +6,7 @@ services:
     build: . 
     container_name: homesecurity_backend
     working_dir: /app/app
-    command: python manage.py runserver 0.0.0.0:8000
+    command: sh -c "python manage.py migrate && daphne -b 0.0.0.0 -p 8000 config.asgi:application"
     volumes:
       - ./app:/app/app  
     ports:
@@ -31,6 +31,7 @@ services:
     container_name: homesecurity_db
     volumes:
       - postgres_data:/var/lib/postgresql/data
+      - ./postgres-init:/docker-entrypoint-initdb.d
     env_file:
       - .env
     ports:

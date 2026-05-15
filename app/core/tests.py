@@ -54,14 +54,18 @@ def test_eventlog_create_authenticated():
 
 # 4. WebSocket Testi (Async)
 @pytest.mark.asyncio
+@pytest.mark.django_db(transaction=True)
 async def test_alert_consumer_connection():
+    from django.contrib.auth.models import User
+    user = await User.objects.acreate(username="wsuser")
+
     application = URLRouter(websocket_urlpatterns)
-    communicator = WebsocketCommunicator(application, "/ws/alerts/home123/")
-    
-    # Bağlantıyı kabul etmesini bekliyoruz
+    communicator = WebsocketCommunicator(application, "/ws/alerts/1/")
+    communicator.scope['user'] = user  # Auth bypass: kullanıcıyı scope'a inject et
+
     connected, subprotocol = await communicator.connect()
     assert connected is True
-    
+
     await communicator.disconnect()
 
 # 5. Gelişmiş Entegrasyon ve Mantık Testleri (Business Logic & Mocks)
