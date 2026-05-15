@@ -144,18 +144,28 @@ class EventLogViewSet(viewsets.ModelViewSet):
         
         # Otonom Karar Mekanizması
         # 1. Eğer cihaz hayati tehlike oluşturabilecek bir tipteyse alarm her halükarda tetiklenir
-        if device.device_sub_type in ['SMOKE', 'GAS', 'WATER']:
+        if device.device_sub_type in ['SMOKE', 'GAS', 'WATER', 'VIBRATION']:
             home.alarm_triggered = True
-        # 2. Eğer cihaz izinsiz giriş tespit edebilecek bir tipteyse sadece ev kuruluysa alarm tetiklenir
         elif device.device_sub_type in ['MOTION', 'MAGNETIC']:
             if home.is_armed:
                 home.alarm_triggered = True
-                
-        # 3. Eğer alarm tetiklendiyse evi kaydet
+
         home.save()
-        
-        # WebSocket için AlertConsumer'a veriyi JSON-uyumlu gönderiyoruz
+
+        # Alarm tetiklendiyse Raspberry Pi'ye actuator komutu gönder
         channel_layer = get_channel_layer()
+        if home.alarm_triggered:
+            if device.device_sub_type == 'WATER':
+                async_to_sync(channel_layer.group_send)(
+                    f'home_{home.id}_commands',
+                    {'type': 'send_command', 'command': 'ACTIVATE_PUMP', 'payload': {}}
+                )
+            async_to_sync(channel_layer.group_send)(
+                f'home_{home.id}_commands',
+                {'type': 'send_command', 'command': 'ACTIVATE_BUZZER', 'payload': {}}
+            )
+
+        # WebSocket için AlertConsumer'a veriyi JSON-uyumlu gönderiyoruz
         async_to_sync(channel_layer.group_send)(
             f'home_{home.id}_alerts',
             {
@@ -212,14 +222,24 @@ class EventLogViewSet(viewsets.ModelViewSet):
             device = event_log.device
             home = device.room.home
 
-            # Otonom Karar Mekanizması
-            if device.device_sub_type in ['SMOKE', 'GAS', 'WATER']:
+            if device.device_sub_type in ['SMOKE', 'GAS', 'WATER', 'VIBRATION']:
                 home.alarm_triggered = True
             elif device.device_sub_type in ['MOTION', 'MAGNETIC']:
                 if home.is_armed:
                     home.alarm_triggered = True
                     
             home.save()
+
+            if home.alarm_triggered:
+                if device.device_sub_type == 'WATER':
+                    async_to_sync(channel_layer.group_send)(
+                        f'home_{home.id}_commands',
+                        {'type': 'send_command', 'command': 'ACTIVATE_PUMP', 'payload': {}}
+                    )
+                async_to_sync(channel_layer.group_send)(
+                    f'home_{home.id}_commands',
+                    {'type': 'send_command', 'command': 'ACTIVATE_BUZZER', 'payload': {}}
+                )
 
             # WebSocket Bildirimi (Orijinal logun zaman damgasıyla)
             async_to_sync(channel_layer.group_send)(

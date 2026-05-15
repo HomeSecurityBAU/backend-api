@@ -11,11 +11,12 @@ https://docs.djangoproject.com/en/5.0/ref/settings/
 """
 
 from pathlib import Path
-import os # .env değişkenleri okumak için
+import os
 from dotenv import load_dotenv
 import firebase_admin
 from firebase_admin import credentials
 import json
+import dj_database_url
 
 # Build paths inside the project like this: BASE_DIR / 'subdir'.
 BASE_DIR = Path(__file__).resolve().parent.parent
@@ -29,10 +30,9 @@ load_dotenv(BASE_DIR.parent / '.env') # .env dosyası backend-api ana dizininde 
 SECRET_KEY = os.getenv('SECRET_KEY', 'django-insecure-default-key') # .env dosyasından key okunur, yoksa default kullanılır 
 
 # SECURITY WARNING: don't run with debug turned on in production!
-DEBUG = True
+DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
-#ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost').split(',') # .env den okunur, yoksa localhost
-ALLOWED_HOSTS = ['*']  # Geliştirme (Development) ortamı için herkese açık bırakıyoruz
+ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
 # Application definition
 
@@ -104,16 +104,22 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
-DATABASES = {
-    'default': {
-        'ENGINE': 'django.db.backends.postgresql', # sqlite3 yerine postgresql, .env den okunacak
-        'NAME': os.getenv('POSTGRES_DB'),
-        'USER': os.getenv('POSTGRES_USER'),
-        'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
-        'HOST': os.getenv('POSTGRES_HOST'),
-        'PORT': os.getenv('POSTGRES_PORT'),
+DATABASE_URL = os.getenv('DATABASE_URL')
+if DATABASE_URL:
+    # Railway ortamı: DATABASE_URL tek env var ile tüm bağlantıyı sağlar
+    DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
+else:
+    # Local/Docker ortamı: ayrı env var'lardan okunur
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.postgresql',
+            'NAME': os.getenv('POSTGRES_DB'),
+            'USER': os.getenv('POSTGRES_USER'),
+            'PASSWORD': os.getenv('POSTGRES_PASSWORD'),
+            'HOST': os.getenv('POSTGRES_HOST'),
+            'PORT': os.getenv('POSTGRES_PORT'),
+        }
     }
-}
 
 
 # Password validation
@@ -195,7 +201,7 @@ MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApQHq8GEoxIv5xs7CqZuykPzoXghPdwDSGlyM
     'AUDIENCE': None,
 }
 # Geliştirme aşamasında mobil ve web'den gelen tüm isteklere izin vermek için:
-CORS_ALLOW_ALL_ORIGINS = True
+CORS_ALLOW_ALL_ORIGINS = os.getenv('CORS_ALLOW_ALL_ORIGINS', 'False') == 'True'
 
 # --- FIREBASE ADMIN SDK INITIALIZATION ---
 firebase_creds_json = os.getenv('FIREBASE_JSON_CREDENTIALS')

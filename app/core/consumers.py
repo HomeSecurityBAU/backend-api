@@ -7,11 +7,13 @@ from .models import Home, FCMToken
 
 class AlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):
-        # URL'den (routing.py üzerinden) gelen home_id değerini alıyoruz
+        if not self.scope['user'].is_authenticated:
+            await self.close()
+            return
+
         self.home_id = self.scope['url_route']['kwargs']['home_id']
         self.room_group_name = f'home_{self.home_id}_alerts'
 
-        # Gruba katıl
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
@@ -47,15 +49,19 @@ class AlertConsumer(AsyncWebsocketConsumer):
 
 class CommandConsumer(AsyncWebsocketConsumer):
     async def connect(self):
+        if not self.scope['user'].is_authenticated:
+            await self.close()
+            return
+
         self.home_id = self.scope['url_route']['kwargs']['home_id']
         self.room_group_name = f'home_{self.home_id}_commands'
 
-        # Gruba katıl
         await self.channel_layer.group_add(
             self.room_group_name,
             self.channel_name
         )
         await self.accept()
+        await self.set_home_online()
 
     async def disconnect(self, close_code):
         # Bağlantı koptuğunda gruptan ayrıl
