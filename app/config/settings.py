@@ -187,16 +187,10 @@ KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM', 'master')
 
 SIMPLE_JWT = {
     'ALGORITHM': 'RS256',
-    'VERIFYING_KEY': """-----BEGIN PUBLIC KEY-----
-MIIBIjANBgkqhkiG9w0BAQEFAAOCAQ8AMIIBCgKCAQEApQHq8GEoxIv5xs7CqZuykPzoXghPdwDSGlyM+lah1pU3SpOSKIrx834ViF+6j46twBUTx86p14VI0E3FX4JFMrlTEBqf2JVnC36IBtC5LIRwFq4xyw6TKnbWK2lbAmG74uZRmp423zw9ht94AOsqYKtLYcEYMKvseGsbFKKOWqyObcgIijCOAsivJ2/2ITv1/jieIzKXZdXase5Ak+UBGfd448eyk5gqwP0U8zT6CkvwSjcTqAwkb89szP4aknBgLUwZwIEVuWMljKv3rqUVKR0hUb2VjLhy8zFYINyyf9WHBSowhnMnx2u9DKnVIdmBZMblIzkgthg3MpoSu5RokwIDAQAB
------END PUBLIC KEY-----""",
-    #'ISSUER': 'http://localhost:8080/realms/SmartHomeRealm',
+    'JWK_URL': f"{os.getenv('KEYCLOAK_SERVER_URL', 'http://localhost:8080')}/realms/SmartHomeRealm/protocol/openid-connect/certs",
     'ISSUER': f"{os.getenv('KEYCLOAK_SERVER_URL', 'http://localhost:8080')}/realms/SmartHomeRealm",
     'USER_ID_CLAIM': 'preferred_username',
-    
-    # İŞTE ÇÖZÜM: Django'ya kullanıcıyı 'username' sütununda aramasını söylüyoruz!
-    'USER_ID_FIELD': 'username', 
-    
+    'USER_ID_FIELD': 'username',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.UntypedToken',),
     'AUDIENCE': None,
 }

@@ -1,0 +1,186 @@
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+
+* {
+  font-family: 'Inter', system-ui, -apple-system, sans-serif;
+  box-sizing: border-box;
+}
+
+body {
+  background: linear-gradient(135deg, #0f0f1a 0%, #1a1a2e 50%, #16213e 100%);
+  min-height: 100vh;
+  margin: 0;
+}
+
+body::before {
+  content: '';
+  position: fixed;
+  top: -50%;
+  left: -50%;
+  width: 200%;
+  height: 200%;
+  background: radial-gradient(ellipse at 60% 40%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+              radial-gradient(ellipse at 30% 70%, rgba(139, 92, 246, 0.08) 0%, transparent 50%);
+  pointer-events: none;
+  z-index: 0;
+}
+
+.login-pf-page {
+  background: transparent;
+}
+
+#kc-header {
+  background: transparent;
+  padding: 0;
+}
+
+#kc-header-wrapper {
+  color: #ffffff;
+  font-size: 1.6rem;
+  font-weight: 700;
+  letter-spacing: -0.5px;
+  padding: 2rem 0 0.5rem;
+  text-align: center;
+}
+
+#kc-header-wrapper::before {
+  content: '🏠 ';
+}
+
+.login-pf-page .card-pf {
+  background: rgba(255, 255, 255, 0.05);
+  backdrop-filter: blur(20px);
+  -webkit-backdrop-filter: blur(20px);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 20px;
+  box-shadow: 0 25px 50px rgba(0, 0, 0, 0.5),
+              0 0 0 1px rgba(255, 255, 255, 0.05) inset;
+  padding: 2.5rem;
+  max-width: 420px;
+  margin: 2rem auto;
+}
+
+#kc-form-login label,
+.login-pf-page label {
+  color: rgba(255, 255, 255, 0.75);
+  font-size: 0.85rem;
+  font-weight: 500;
+  letter-spacing: 0.3px;
+  margin-bottom: 0.4rem;
+}
+
+#kc-form-login input[type="text"],
+#kc-form-login input[type="password"],
+#kc-form-login input[type="email"] {
+  background: rgba(255, 255, 255, 0.07);
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  border-radius: 10px;
+  color: #ffffff;
+  font-size: 0.95rem;
+  padding: 0.75rem 1rem;
+  transition: all 0.2s ease;
+  width: 100%;
+  outline: none;
+}
+
+#kc-form-login input[type="text"]:focus,
+#kc-form-login input[type="password"]:focus,
+#kc-form-login input[type="email"]:focus {
+  background: rgba(255, 255, 255, 0.1);
+  border-color: #00d4ff;
+  box-shadow: 0 0 0 3px rgba(0, 212, 255, 0.15);
+}
+
+#kc-form-login input[type="text"]::placeholder,
+#kc-form-login input[type="password"]::placeholder {
+  color: rgba(255, 255, 255, 0.3);
+}
+
+.form-group {
+  margin-bottom: 1.2rem;
+}
+
+#kc-form-buttons {
+  margin-top: 1.5rem;
+}
+
+#kc-form-buttons .btn-primary,
+#kc-login {
+  background: linear-gradient(135deg, #00d4ff 0%, #8b5cf6 100%);
+  border: none;
+  border-radius: 10px;
+  color: #ffffff;
+  cursor: pointer;
+  font-size: 1rem;
+  font-weight: 600;
+  letter-spacing: 0.3px;
+  padding: 0.85rem 1.5rem;
+  transition: all 0.2s ease;
+  width: 100%;
+}
+
+#kc-form-buttons .btn-primary:hover,
+#kc-login:hover {
+  box-shadow: 0 8px 25px rgba(0, 212, 255, 0.35);
+  transform: translateY(-1px);
+  opacity: 0.95;
+}
+
+#kc-form-buttons .btn-primary:active,
+#kc-login:active {
+  transform: translateY(0);
+}
+
+#kc-registration a,
+#kc-form-options a {
+  color: #00d4ff;
+  text-decoration: none;
+  font-weight: 500;
+}
+
+#kc-registration a:hover,
+#kc-form-options a:hover {
+  text-decoration: underline;
+}
+
+#kc-registration,
+#kc-form-options {
+  color: rgba(255, 255, 255, 0.6);
+  font-size: 0.85rem;
+  text-align: center;
+  margin-top: 1.2rem;
+}
+
+.checkbox label {
+  color: rgba(255, 255, 255, 0.65);
+  font-size: 0.85rem;
+}
+
+#kc-content-wrapper {
+  position: relative;
+  z-index: 1;
+}
+
+.alert-error {
+  background: rgba(239, 68, 68, 0.15);
+  border: 1px solid rgba(239, 68, 68, 0.3);
+  border-radius: 10px;
+  color: #fca5a5;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+.alert-success {
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+  border-radius: 10px;
+  color: #86efac;
+  padding: 0.75rem 1rem;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+}
+
+#kc-info-message {
+  color: rgba(255, 255, 255, 0.8);
+  text-align: center;
+}
