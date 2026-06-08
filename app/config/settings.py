@@ -183,12 +183,12 @@ SPECTACULAR_SETTINGS = {
 
 # Keycloak JWT Doğrulama Ayarları
 KEYCLOAK_SERVER_URL = os.getenv('KEYCLOAK_SERVER_URL', 'http://localhost:8080')
-KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM', 'master')
+KEYCLOAK_REALM = os.getenv('KEYCLOAK_REALM', 'SmartHomeRealm')
 
 SIMPLE_JWT = {
     'ALGORITHM': 'RS256',
-    'JWK_URL': f"{os.getenv('KEYCLOAK_SERVER_URL', 'http://localhost:8080')}/realms/SmartHomeRealm/protocol/openid-connect/certs",
-    'ISSUER': f"{os.getenv('KEYCLOAK_SERVER_URL', 'http://localhost:8080')}/realms/SmartHomeRealm",
+    'JWK_URL': f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}/protocol/openid-connect/certs",
+    'ISSUER': f"{KEYCLOAK_SERVER_URL}/realms/{KEYCLOAK_REALM}",
     'USER_ID_CLAIM': 'preferred_username',
     'USER_ID_FIELD': 'username',
     'AUTH_TOKEN_CLASSES': ('rest_framework_simplejwt.tokens.UntypedToken',),

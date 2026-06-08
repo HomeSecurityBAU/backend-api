@@ -1,4 +1,5 @@
 import json
+import asyncio
 from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.utils import timezone
@@ -70,7 +71,9 @@ class CommandConsumer(AsyncWebsocketConsumer):
             self.channel_name
         )
         
-        await self.set_home_offline_and_notify()
+        await self.set_home_offline()
+        # Arka planda 30 saniyelik bildirim kontrolü başlat
+        asyncio.create_task(self.set_home_offline_with_grace_period(30))
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
@@ -94,12 +97,31 @@ class CommandConsumer(AsyncWebsocketConsumer):
             home.save()
 
     @database_sync_to_async
-    def set_home_offline_and_notify(self):
+    def set_home_offline(self):
         home = Home.objects.filter(id=self.home_id).first()
         if home:
             home.is_online = False
             home.save()
-            
+
+    async def set_home_offline_with_grace_period(self, delay):
+        await asyncio.sleep(delay)
+        # Gecikme süresi bitince hala çevrimdışı olup olmadığını kontrol et
+        still_offline = await self.check_if_still_offline()
+        if still_offline:
+            await self.notify_home_offline()
+
+    @database_sync_to_async
+    def check_if_still_offline(self):
+        home = Home.objects.filter(id=self.home_id).first()
+        if home:
+            # Eğer is_online hala False ise (tekrar bağlanıp is_online = True yapılmadıysa)
+            return not home.is_online
+        return False
+
+    @database_sync_to_async
+    def notify_home_offline(self):
+        home = Home.objects.filter(id=self.home_id).first()
+        if home:
             owner = home.owner
             if owner:
                 tokens = FCMToken.objects.filter(user=owner).values_list('token', flat=True)

@@ -143,18 +143,22 @@ class EventLogViewSet(viewsets.ModelViewSet):
         home = device.room.home
         
         # Otonom Karar Mekanizması
-        # 1. Eğer cihaz hayati tehlike oluşturabilecek bir tipteyse alarm her halükarda tetiklenir
-        if device.device_sub_type in ['SMOKE', 'GAS', 'WATER', 'VIBRATION']:
-            home.alarm_triggered = True
-        elif device.device_sub_type in ['MOTION', 'MAGNETIC']:
-            if home.is_armed:
+        # Sadece tehlike veya anormal bir durum belirten değerlerde alarmı tetikliyoruz
+        # (NORMAL, OK, CLEAR, CLOSED, SAFE gibi güvenli durum bildirimleri alarm tetiklemez)
+        is_danger = event_log.value.upper() not in ['NORMAL', 'OK', 'CLEAR', 'CLOSED', 'SAFE']
+        
+        if is_danger:
+            if device.device_sub_type in ['SMOKE', 'GAS', 'WATER', 'VIBRATION']:
                 home.alarm_triggered = True
+            elif device.device_sub_type in ['MOTION', 'MAGNETIC']:
+                if home.is_armed:
+                    home.alarm_triggered = True
 
-        home.save()
+            home.save()
 
         # Alarm tetiklendiyse Raspberry Pi'ye actuator komutu gönder
         channel_layer = get_channel_layer()
-        if home.alarm_triggered:
+        if home.alarm_triggered and is_danger:
             if device.device_sub_type == 'WATER':
                 async_to_sync(channel_layer.group_send)(
                     f'home_{home.id}_commands',
@@ -205,11 +209,9 @@ class EventLogViewSet(viewsets.ModelViewSet):
 
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
-        # Gelen verinin liste olup olmadığını kontrol et
         if not isinstance(request.data, list):
             return Response({'error': 'Toplu kayıt işlemi için veri bir liste olmalıdır.'}, status=status.HTTP_400_BAD_REQUEST)
 
-        # many=True parametresiyle listeyi toplu doğrula ve kaydet
         serializer = self.get_serializer(data=request.data, many=True)
         serializer.is_valid(raise_exception=True)
         self.perform_create(serializer)
@@ -217,29 +219,36 @@ class EventLogViewSet(viewsets.ModelViewSet):
         created_logs = serializer.instance
         channel_layer = get_channel_layer()
 
-        # Toplu kaydedilen her bir log için döngü oluştur
+        homes_to_update = {}
+        water_leak_detected_by_home = {}
+        alarm_triggered_by_home = {}
+        triggered_devices_by_home = {}
+
         for event_log in created_logs:
             device = event_log.device
             home = device.room.home
+            home_id = home.id
 
-            if device.device_sub_type in ['SMOKE', 'GAS', 'WATER', 'VIBRATION']:
-                home.alarm_triggered = True
-            elif device.device_sub_type in ['MOTION', 'MAGNETIC']:
-                if home.is_armed:
+            if home_id not in homes_to_update:
+                homes_to_update[home_id] = home
+                water_leak_detected_by_home[home_id] = False
+                alarm_triggered_by_home[home_id] = False
+                triggered_devices_by_home[home_id] = []
+
+            is_danger = event_log.value.upper() not in ['NORMAL', 'OK', 'CLEAR', 'CLOSED', 'SAFE']
+
+            if is_danger:
+                if device.device_sub_type in ['SMOKE', 'GAS', 'WATER', 'VIBRATION']:
                     home.alarm_triggered = True
-                    
-            home.save()
-
-            if home.alarm_triggered:
-                if device.device_sub_type == 'WATER':
-                    async_to_sync(channel_layer.group_send)(
-                        f'home_{home.id}_commands',
-                        {'type': 'send_command', 'command': 'ACTIVATE_PUMP', 'payload': {}}
-                    )
-                async_to_sync(channel_layer.group_send)(
-                    f'home_{home.id}_commands',
-                    {'type': 'send_command', 'command': 'ACTIVATE_BUZZER', 'payload': {}}
-                )
+                    alarm_triggered_by_home[home_id] = True
+                    triggered_devices_by_home[home_id].append(device.name)
+                    if device.device_sub_type == 'WATER':
+                        water_leak_detected_by_home[home_id] = True
+                elif device.device_sub_type in ['MOTION', 'MAGNETIC']:
+                    if home.is_armed:
+                        home.alarm_triggered = True
+                        alarm_triggered_by_home[home_id] = True
+                        triggered_devices_by_home[home_id].append(device.name)
 
             # WebSocket Bildirimi (Orijinal logun zaman damgasıyla)
             async_to_sync(channel_layer.group_send)(
@@ -255,25 +264,42 @@ class EventLogViewSet(viewsets.ModelViewSet):
                 }
             )
 
-            # FCM Bildirimi
-            owner = home.owner
-            if owner:
-                tokens = FCMToken.objects.filter(user=owner).values_list('token', flat=True)
-                if tokens:
-                    message = messaging.MulticastMessage(
-                        notification=messaging.Notification(
-                            title="Güvenlik Uyarısı (Geçmiş Senkronizasyon)",
-                            body=f"{device.name} cihazından '{event_log.value}' uyarısı alındı!"
-                        ),
-                        data={
-                            'is_alarm_active': str(home.alarm_triggered).lower()
-                        },
-                        tokens=list(tokens),
+        # Değişen evleri bir kere kaydet ve aktüatör/FCM bildirimlerini gruplayarak gönder
+        for home_id, home in homes_to_update.items():
+            if alarm_triggered_by_home[home_id]:
+                home.save()
+
+                if water_leak_detected_by_home[home_id]:
+                    async_to_sync(channel_layer.group_send)(
+                        f'home_{home.id}_commands',
+                        {'type': 'send_command', 'command': 'ACTIVATE_PUMP', 'payload': {}}
                     )
-                    try:
-                        messaging.send_each_for_multicast(message)
-                    except Exception as e:
-                        print(f"FCM Bildirimi gönderilirken hata oluştu: {e}")
+                async_to_sync(channel_layer.group_send)(
+                    f'home_{home.id}_commands',
+                    {'type': 'send_command', 'command': 'ACTIVATE_BUZZER', 'payload': {}}
+                )
+
+                # FCM Bildirimi (Tek bir birleştirilmiş mesaj)
+                owner = home.owner
+                if owner:
+                    tokens = FCMToken.objects.filter(user=owner).values_list('token', flat=True)
+                    if tokens:
+                        devices_list = list(set(triggered_devices_by_home[home_id]))
+                        devices_str = ", ".join(devices_list)
+                        message = messaging.MulticastMessage(
+                            notification=messaging.Notification(
+                                title="Güvenlik Uyarısı (Geçmiş Senkronizasyon)",
+                                body=f"Sistem çevrimdışı iken şu cihazlardan tehlike tespiti alındı: {devices_str}!"
+                            ),
+                            data={
+                                'is_alarm_active': str(home.alarm_triggered).lower()
+                            },
+                            tokens=list(tokens),
+                        )
+                        try:
+                            messaging.send_each_for_multicast(message)
+                        except Exception as e:
+                            print(f"FCM Bildirimi gönderilirken hata oluştu: {e}")
 
         return Response({'status': f'{len(created_logs)} adet event log başarıyla senkronize edildi.'}, status=status.HTTP_201_CREATED)
 
@@ -322,7 +348,8 @@ class NFCVerifyView(APIView):
         uid = request.data.get('uid')
         home_id = request.data.get('home_id') # Hangi evden istek geldiğini bilmek için Raspberry Pi'nin bu id'yi de payload'a eklemesi gerekir
         
-        tag = NFCTag.objects.filter(uid=uid, is_active=True).first()
+        # Sadece istek atan kullanıcının sahip olduğu evle ilişkili aktif tagleri kontrol et
+        tag = NFCTag.objects.filter(uid=uid, is_active=True, home__owner=request.user).first()
         
         if tag:
             AccessLog.objects.create(
@@ -350,7 +377,8 @@ class NFCVerifyView(APIView):
             
         # Kart geçersizse
         if home_id:
-            home = Home.objects.filter(id=home_id).first()
+            # IDOR zafiyetini engellemek için sadece istek atan kullanıcının kendi evini buluyoruz
+            home = Home.objects.filter(id=home_id, owner=request.user).first()
             # Ev "Kilitli (Armed)" durumdaysa alarmı tetikle ve bildirim at
             if home and home.is_armed:
                 home.alarm_triggered = True

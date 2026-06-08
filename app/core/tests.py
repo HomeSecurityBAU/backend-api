@@ -172,3 +172,58 @@ class AdvancedHomeSecurityTests(APITestCase):
         # Veritabanından başarılı bir şekilde çekilebildiğini onayla
         db_user = User.objects.get(username='new_keycloak_user')
         self.assertEqual(db_user.username, 'new_keycloak_user')
+
+    # --- Ekstra Güvenlik ve Mantık Testleri ---
+    def test_alarm_logic_safe_value(self):
+        """Senaryo D: Sensörden güvenli durum ('NORMAL') geldiğinde alarm tetiklenmemeli."""
+        self.home.is_armed = True
+        self.home.save()
+        
+        payload = {"device": self.smoke_device.id, "value": "NORMAL"}
+        response = self.client.post('/api/eventlogs/', data=payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_201_CREATED)
+        self.home.refresh_from_db()
+        self.assertFalse(self.home.alarm_triggered)
+
+    def test_nfc_verify_success_for_owner(self):
+        """Senaryo E: Kendi evine ait yetkili bir NFC kartı okutulduğunda giriş başarılı olmalı."""
+        from .models import NFCTag
+        nfc_tag = NFCTag.objects.create(uid="auth_tag_123", user=self.user, home=self.home, is_active=True)
+        
+        payload = {"uid": "auth_tag_123", "home_id": self.home.id}
+        response = self.client.post('/api/verify-nfc/', data=payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_200_OK)
+        self.assertTrue(response.data["authorized"])
+
+    def test_nfc_verify_idor_other_user_tag_rejected(self):
+        """Senaryo F: Başka bir kullanıcının evine ait NFC kartı okutulduğunda yetkisiz kart uyarısı dönmeli."""
+        from .models import NFCTag
+        other_user = User.objects.create(username="otheruser")
+        other_home = Home.objects.create(name="Other Home", owner=other_user)
+        other_tag = NFCTag.objects.create(uid="other_tag_123", user=other_user, home=other_home, is_active=True)
+        
+        # İstek atan kendi kullanıcımız (self.user), yetkisiz kartı kendi evi için sorguluyor
+        payload = {"uid": "other_tag_123", "home_id": self.home.id}
+        response = self.client.post('/api/verify-nfc/', data=payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        self.assertFalse(response.data["authorized"])
+
+    def test_nfc_verify_idor_unauthorized_home_alarm_prevented(self):
+        """Senaryo G: Yetkisiz bir kart başka bir kullanıcının home_id'si ile okutulduğunda o evde alarm tetiklenmemeli."""
+        other_user = User.objects.create(username="otheruser")
+        other_home = Home.objects.create(name="Other Home", owner=other_user)
+        other_home.is_armed = True
+        other_home.save()
+        
+        # İstek atan kendi kullanıcımız (self.user), yetkisiz kartı baska birinin evi için gönderiyor
+        payload = {"uid": "invalid_tag_999", "home_id": other_home.id}
+        response = self.client.post('/api/verify-nfc/', data=payload)
+        
+        self.assertEqual(response.status_code, status.HTTP_403_FORBIDDEN)
+        
+        # Diğer kullanıcının evinde alarm TETİKLENMEMELİDİR (IDOR engellendi)
+        other_home.refresh_from_db()
+        self.assertFalse(other_home.alarm_triggered)
