@@ -34,6 +34,13 @@ DEBUG = os.getenv('DEBUG', 'False') == 'True'
 
 ALLOWED_HOSTS = os.getenv('ALLOWED_HOSTS', 'localhost,127.0.0.1').split(',')
 
+# Django 4.0+ HTTPS CSRF Ayarı (Railway için)
+CSRF_TRUSTED_ORIGINS = [
+    'https://*.up.railway.app',
+    'http://localhost:8000',
+    'http://127.0.0.1:8000',
+]
+
 # Application definition
 
 INSTALLED_APPS = [
@@ -90,13 +97,18 @@ WSGI_APPLICATION = 'config.wsgi.application'
 # Standart WSGI yerine Asenkron ASGI kullanacağımızı belirtiyoruz
 ASGI_APPLICATION = 'config.asgi.application'
 
-# Redis Bağlantı Ayarları (Docker-compose içindeki redis servisine işaret eder)
+# Redis Bağlantı Ayarları (Docker-compose veya Railway Redis)
 CHANNEL_LAYERS = {
     'default': {
         'BACKEND': 'channels_redis.core.RedisChannelLayer',
         'CONFIG': {
-            #"hosts": [('redis', 6379)], # Eğer localde çalışıyorsan ve Redis ayrıysa ('127.0.0.1', 6379) olabilir.
-            "hosts": [os.getenv('REDIS_URL', 'redis://127.0.0.1:6379')],
+            "hosts": [{
+                "address": os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'),
+                "socket_timeout": 5,                # Sockets okuma zaman aşımı
+                "socket_connect_timeout": 5,        # Sockets ilk bağlanma zaman aşımı
+                "health_check_interval": 20,        # Bağlantıyı canlı tutmak için her 20s'de bir ping atar
+                "retry_on_timeout": True,           # Zaman aşımı durumunda otomatik yeniden dener
+            }],
         },
     },
 }
