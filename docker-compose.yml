@@ -41,7 +41,7 @@ services:
 
   # 4. Keycloak (Kimlik Yönetimi)
   keycloak:
-    image: quay.io/keycloak/keycloak:23.0.1 # Sürümü 23.0.1 olarak sabitledik
+    image: quay.io/keycloak/keycloak:26.2.4 # Sürümü 26.2.4 olarak sabitledik
     container_name: homesecurity_keycloak
     environment:
       KC_DB: postgres
