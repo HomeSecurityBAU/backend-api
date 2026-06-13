@@ -25,4 +25,4 @@ COPY . /app/
 WORKDIR /app/app
 # varsayılan komut: python sürümünü gösteri, ilerde python manage.py runserver olcak 
 #CMD ["python", "--version"]
-CMD sh -c "python /app/app/manage.py migrate && daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application"
+CMD sh -c "python /app/app/manage.py collectstatic --noinput && python /app/app/manage.py migrate && daphne -b 0.0.0.0 -p ${PORT:-8000} config.asgi:application"
