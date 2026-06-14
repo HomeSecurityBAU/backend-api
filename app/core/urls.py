@@ -1,6 +1,6 @@
 from django.urls import path, include
 from rest_framework.routers import DefaultRouter
-from .views import HomeViewSet, RoomViewSet, DeviceViewSet, EventLogViewSet, AccessLogViewSet, FCMTokenViewSet, NFCTagViewSet, NFCVerifyView
+from .views import HomeViewSet, RoomViewSet, DeviceViewSet, EventLogViewSet, AccessLogViewSet, FCMTokenViewSet, NFCTagViewSet, NFCVerifyView, HealthCheckView
 
 #router url leri otomatik oluşturcak (/homes ve /homes/x/ gibi)
 router = DefaultRouter()
@@ -15,5 +15,6 @@ router.register(r'nfc-tags', NFCTagViewSet, basename='nfc-tags')
 urlpatterns = [
     path('', include(router.urls)),
     path('verify-nfc/', NFCVerifyView.as_view(), name='verify-nfc'),
+    path('health/', HealthCheckView.as_view(), name='health-check'),
 ]
 #bunlar config deki ana url yerine geç.icek

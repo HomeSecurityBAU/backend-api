@@ -421,3 +421,11 @@ class NFCVerifyView(APIView):
             "authorized": False,
             "message": "Geçersiz veya yetkisiz kart"
         }, status=status.HTTP_403_FORBIDDEN)
+
+
+class HealthCheckView(APIView):
+    authentication_classes = []
+    permission_classes = []
+
+    def get(self, request):
+        return Response({"status": "ok"}, status=status.HTTP_200_OK)
