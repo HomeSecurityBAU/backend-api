@@ -18,6 +18,65 @@ class Home(models.Model):
 
     def __str__(self):
         return self.name
+
+    def save(self, *args, **kwargs):
+        is_new = self.pk is None
+        old_is_armed = None
+        old_alarm_triggered = None
+        
+        if not is_new:
+            try:
+                old_instance = Home.objects.get(pk=self.pk)
+                old_is_armed = old_instance.is_armed
+                old_alarm_triggered = old_instance.alarm_triggered
+            except Home.DoesNotExist:
+                pass
+                
+        super().save(*args, **kwargs)
+        
+        if not is_new:
+            # 1. State change notification to Pi
+            if old_is_armed != self.is_armed or old_alarm_triggered != self.alarm_triggered:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        f'home_{self.id}_commands',
+                        {
+                            'type': 'send_command',
+                            'command': 'SET_SECURITY_MODE',
+                            'payload': {'is_armed': self.is_armed}
+                        }
+                    )
+            
+            # 2. Automatically activate buzzer on Pi if alarm is triggered
+            if old_alarm_triggered != self.alarm_triggered and self.alarm_triggered:
+                from channels.layers import get_channel_layer
+                from asgiref.sync import async_to_sync
+                channel_layer = get_channel_layer()
+                if channel_layer:
+                    async_to_sync(channel_layer.group_send)(
+                        f'home_{self.id}_commands',
+                        {'type': 'send_command', 'command': 'ACTIVATE_BUZZER', 'payload': {}}
+                    )
+
+            # 3. EventLog auto-generation for Buzzer when alarm is silenced or triggered
+            if old_alarm_triggered != self.alarm_triggered:
+                buzzer_device = Device.objects.filter(room__home=self, device_sub_type='BUZZER').first()
+                if buzzer_device:
+                    recent_log = EventLog.objects.filter(
+                        device=buzzer_device,
+                        value='NORMAL' if not self.alarm_triggered else 'SIREN',
+                        timestamp__gte=timezone.now() - timezone.timedelta(seconds=5)
+                    ).exists()
+                    
+                    if not recent_log:
+                        EventLog.objects.create(
+                            device=buzzer_device,
+                            value='NORMAL' if not self.alarm_triggered else 'SIREN',
+                            description='Siren susturuldu (Sistem)' if not self.alarm_triggered else 'Siren çalıyor (Alarm Tetiklendi)'
+                        )
     
 # ODA TABLOSU
 class Room(models.Model):

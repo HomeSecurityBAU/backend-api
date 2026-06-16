@@ -33,6 +33,18 @@ class HomeViewSet(viewsets.ModelViewSet): #ModelViewSet otomatik olarak get, pos
             home.alarm_triggered = False
             
         home.save()
+        
+        # Pi panel durumunu güncellemek için WebSocket komutu gönder
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'home_{home.id}_commands',
+            {
+                'type': 'send_command',
+                'command': 'SET_SECURITY_MODE',
+                'payload': {'is_armed': home.is_armed}
+            }
+        )
+
         serializer = self.get_serializer(home)
         return Response(serializer.data, status=status.HTTP_200_OK)
 
@@ -311,6 +323,15 @@ class AccessLogViewSet(viewsets.ModelViewSet):
         # Modelle eklediğimiz home yardımıyla access logları sadece ilgili kullanıcı görebilecek
         return AccessLog.objects.filter(home__owner=self.request.user)
 
+    def perform_create(self, serializer):
+        access_log = serializer.save()
+        if access_log.direction == 'IN':
+            home = access_log.home
+            if home and (home.is_armed or home.alarm_triggered):
+                home.is_armed = False
+                home.alarm_triggered = False
+                home.save()
+
     @action(detail=False, methods=['post'])
     def bulk_create(self, request):
         # Gelen verinin liste olup olmadığını kontrol et
@@ -352,8 +373,25 @@ class NFCVerifyView(APIView):
         tag = NFCTag.objects.filter(uid=uid, is_active=True, home__owner=request.user).first()
         
         if tag:
+            # Durumu veri tabanında disarm et
+            home = tag.home
+            siren_was_active = home.alarm_triggered
+            home.is_armed = False
+            home.alarm_triggered = False
+            home.save()
+
+            # Siren durumu değiştiyse bunu EventLog olarak kaydet
+            if siren_was_active:
+                buzzer_device = Device.objects.filter(room__home=home, device_sub_type='BUZZER').first()
+                if buzzer_device:
+                    EventLog.objects.create(
+                        device=buzzer_device,
+                        value='NORMAL',
+                        description='Siren susturuldu (NFC Kart Girişi)'
+                    )
+
             AccessLog.objects.create(
-                home=tag.home,
+                home=home,
                 user_id=tag.uid,
                 direction='IN'
             )
@@ -361,7 +399,7 @@ class NFCVerifyView(APIView):
             # Kart geçerliyse kapıyı açmak için Raspberry Pi'ye WebSocket komutu gönder
             channel_layer = get_channel_layer()
             async_to_sync(channel_layer.group_send)(
-                f'home_{tag.home.id}_commands',
+                f'home_{home.id}_commands',
                 {
                     'type': 'send_command',
                     'command': 'OPEN_DOOR',
