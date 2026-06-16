@@ -69,6 +69,27 @@ class HomeViewSet(viewsets.ModelViewSet): #ModelViewSet otomatik olarak get, pos
         
         return Response({'status': 'Alarm durduruldu ve sistem normale döndü.', 'is_alarm_active': home.alarm_triggered}, status=status.HTTP_200_OK)
 
+    @action(detail=True, methods=['post'])
+    def start_nfc_enroll(self, request, pk=None):
+        home = self.get_object()
+        user_id = request.data.get('user_id')
+        
+        if not user_id:
+            return Response({'error': "'user_id' parametresi gereklidir."}, status=status.HTTP_400_BAD_REQUEST)
+            
+        # Pi'ye WebSocket üzerinden kayıt modunu başlat komutu gönder
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'home_{home.id}_commands',
+            {
+                'type': 'send_command',
+                'command': 'START_NFC_ENROLL',
+                'payload': {'user_id': user_id}
+            }
+        )
+        
+        return Response({'status': 'NFC tanımlama modu başlatıldı.', 'user_id': user_id}, status=status.HTTP_200_OK)
+
     @action(detail=True, methods=['get'])
     def dashboard(self, request, pk=None):
         home = self.get_object()
@@ -362,6 +383,23 @@ class NFCTagViewSet(viewsets.ModelViewSet):
 
     def get_queryset(self):
         return NFCTag.objects.filter(home__owner=self.request.user)
+
+    def perform_create(self, serializer):
+        tag = serializer.save()
+        # Kayıt başarılı uyarısını WebSocket üzerinden yayınla
+        channel_layer = get_channel_layer()
+        async_to_sync(channel_layer.group_send)(
+            f'home_{tag.home.id}_alerts',
+            {
+                'type': 'send_alert',
+                'alert_type': 'NFC_ENROLLED',
+                'message': f"Yeni NFC kart '{tag.uid}' kullanıcısı '{tag.user.username}' için başarıyla tanımlandı!",
+                'device_name': 'NFC Modülü',
+                'value': tag.uid,
+                'timestamp': timezone.now().isoformat(),
+                'is_alarm_active': tag.home.alarm_triggered
+            }
+        )
 
 # NFC DOĞRULAMA VIEW
 class NFCVerifyView(APIView):
