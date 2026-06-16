@@ -104,8 +104,6 @@ CHANNEL_LAYERS = {
         'CONFIG': {
             "hosts": [{
                 "address": os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'),
-                "socket_timeout": 5,                # Sockets okuma zaman aşımı
-                "socket_connect_timeout": 5,        # Sockets ilk bağlanma zaman aşımı
                 "health_check_interval": 20,        # Bağlantıyı canlı tutmak için her 20s'de bir ping atar
                 "retry_on_timeout": True,           # Zaman aşımı durumunda otomatik yeniden dener
             }],
@@ -116,10 +114,24 @@ CHANNEL_LAYERS = {
 # Database
 # https://docs.djangoproject.com/en/5.0/ref/settings/#databases
 
+import sys
 DATABASE_URL = os.getenv('DATABASE_URL')
 if DATABASE_URL:
     # Railway ortamı: DATABASE_URL tek env var ile tüm bağlantıyı sağlar
     DATABASES = {'default': dj_database_url.parse(DATABASE_URL)}
+elif 'test' in sys.argv or any('pytest' in arg for arg in sys.argv):
+    # Test ortamı için lokal SQLite3 ve InMemoryChannelLayer kullan
+    DATABASES = {
+        'default': {
+            'ENGINE': 'django.db.backends.sqlite3',
+            'NAME': BASE_DIR / 'db.sqlite3',
+        }
+    }
+    CHANNEL_LAYERS = {
+        'default': {
+            'BACKEND': 'channels.layers.InMemoryChannelLayer',
+        }
+    }
 else:
     # Local/Docker ortamı: ayrı env var'lardan okunur
     DATABASES = {

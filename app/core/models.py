@@ -73,6 +73,7 @@ class AccessLog(models.Model): #bura hakkındada çok birşey bilmiyorum parmak 
     DIRECTION_CHOICES=(
         ('IN', 'Giriş'),
         ('OUT', 'Çıkış'),
+        ('ERR', 'Yetkisiz Giriş'),
     )
 
     home = models.ForeignKey(Home, on_delete=models.CASCADE, related_name='access_logs', null=True) # Access loglarının kime ait olduğunu bulabilmek için eklendi

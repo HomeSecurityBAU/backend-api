@@ -379,6 +379,12 @@ class NFCVerifyView(APIView):
         if home_id:
             # IDOR zafiyetini engellemek için sadece istek atan kullanıcının kendi evini buluyoruz
             home = Home.objects.filter(id=home_id, owner=request.user).first()
+            if home:
+                AccessLog.objects.create(
+                    home=home,
+                    user_id=uid if uid else 'Bilinmeyen',
+                    direction='ERR'
+                )
             # Ev "Kilitli (Armed)" durumdaysa alarmı tetikle ve bildirim at
             if home and home.is_armed:
                 home.alarm_triggered = True

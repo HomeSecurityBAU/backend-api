@@ -77,8 +77,26 @@ class CommandConsumer(AsyncWebsocketConsumer):
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
-        if text_data_json.get('type') == 'heartbeat':
+        msg_type = text_data_json.get('type')
+        if msg_type == 'heartbeat':
             await self.update_heartbeat()
+        elif msg_type == 'state_update':
+            is_armed = text_data_json.get('is_armed')
+            alarm_triggered = text_data_json.get('alarm_triggered')
+            updated, current_is_armed, current_alarm_triggered = await self.update_home_state(is_armed, alarm_triggered)
+            if updated:
+                await self.channel_layer.group_send(
+                    f'home_{self.home_id}_alerts',
+                    {
+                        'type': 'send_alert',
+                        'alert_type': 'STATE_UPDATE',
+                        'message': f"Sistem durumu güncellendi: Armed={current_is_armed}, Alarm={current_alarm_triggered}",
+                        'device_name': 'Sistem',
+                        'value': 'ARMED' if current_is_armed else 'DISARMED',
+                        'timestamp': timezone.now().isoformat(),
+                        'is_alarm_active': current_alarm_triggered
+                    }
+                )
 
     # View üzerinden 'send_command' eventi tetiklendiğinde çalışır
     async def send_command(self, event):
@@ -144,3 +162,20 @@ class CommandConsumer(AsyncWebsocketConsumer):
         if home:
             home.last_heartbeat = timezone.now()
             home.save()
+
+    @database_sync_to_async
+    def update_home_state(self, is_armed, alarm_triggered):
+        home = Home.objects.filter(id=self.home_id).first()
+        if home:
+            updated = False
+            if is_armed is not None and home.is_armed != is_armed:
+                home.is_armed = is_armed
+                updated = True
+            if alarm_triggered is not None and home.alarm_triggered != alarm_triggered:
+                home.alarm_triggered = alarm_triggered
+                updated = True
+            
+            if updated:
+                home.save()
+            return updated, home.is_armed, home.alarm_triggered
+        return False, False, False
