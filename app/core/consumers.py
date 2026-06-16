@@ -4,7 +4,7 @@ from channels.generic.websocket import AsyncWebsocketConsumer
 from channels.db import database_sync_to_async
 from django.utils import timezone
 from firebase_admin import messaging
-from .models import Home, FCMToken
+from .models import Home, FCMToken, Device, EventLog
 
 class AlertConsumer(AsyncWebsocketConsumer):
     async def connect(self):
@@ -168,14 +168,26 @@ class CommandConsumer(AsyncWebsocketConsumer):
         home = Home.objects.filter(id=self.home_id).first()
         if home:
             updated = False
+            siren_changed = False
             if is_armed is not None and home.is_armed != is_armed:
                 home.is_armed = is_armed
                 updated = True
             if alarm_triggered is not None and home.alarm_triggered != alarm_triggered:
                 home.alarm_triggered = alarm_triggered
                 updated = True
+                siren_changed = True
             
             if updated:
                 home.save()
+                
+                # Siren durumu değiştiyse bunu EventLog olarak kaydet
+                if siren_changed:
+                    buzzer_device = Device.objects.filter(room__home=home, device_sub_type='BUZZER').first()
+                    if buzzer_device:
+                        EventLog.objects.create(
+                            device=buzzer_device,
+                            value='NORMAL' if not home.alarm_triggered else 'SIREN',
+                            description='Siren susturuldu (NFC Kart veya Mobil)' if not home.alarm_triggered else 'Siren çalıyor (Alarm Tetiklendi)'
+                        )
             return updated, home.is_armed, home.alarm_triggered
         return False, False, False
