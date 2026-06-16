@@ -104,6 +104,8 @@ CHANNEL_LAYERS = {
         'CONFIG': {
             "hosts": [{
                 "address": os.getenv('REDIS_URL', 'redis://127.0.0.1:6379'),
+                "socket_timeout": 30,                # Prematüre zaman aşımını engellemek için (5sn brpop'tan büyük olmalı)
+                "socket_connect_timeout": 30,
                 "health_check_interval": 20,        # Bağlantıyı canlı tutmak için her 20s'de bir ping atar
                 "retry_on_timeout": True,           # Zaman aşımı durumunda otomatik yeniden dener
             }],
