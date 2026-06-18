@@ -23,10 +23,11 @@ class AlertConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         # Bağlantı koptuğunda gruptan ayrıl
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
 
     # Backend'den bir tehlike sinyali geldiğinde bu fonksiyon tetiklenecek
     async def send_alert(self, event):
@@ -66,14 +67,15 @@ class CommandConsumer(AsyncWebsocketConsumer):
 
     async def disconnect(self, close_code):
         # Bağlantı koptuğunda gruptan ayrıl
-        await self.channel_layer.group_discard(
-            self.room_group_name,
-            self.channel_name
-        )
-        
-        await self.set_home_offline()
-        # Arka planda 30 saniyelik bildirim kontrolü başlat
-        asyncio.create_task(self.set_home_offline_with_grace_period(30))
+        if hasattr(self, 'room_group_name'):
+            await self.channel_layer.group_discard(
+                self.room_group_name,
+                self.channel_name
+            )
+            
+            await self.set_home_offline()
+            # Arka planda 30 saniyelik bildirim kontrolü başlat
+            asyncio.create_task(self.set_home_offline_with_grace_period(30))
 
     async def receive(self, text_data):
         text_data_json = json.loads(text_data)
